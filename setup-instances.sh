@@ -26,19 +26,22 @@ sudo apt-get install -y \
     python3-pip \
     awscli
 
-# Download FFmpeg from BtbN/FFmpeg-Builds
-echo "Downloading FFmpeg binary..."
-if [ "$ARCH" = "x86_64" ]; then
-    wget -O ffmpeg-release.tar.xz "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz"
-elif [ "$ARCH" = "aarch64" ]; then
-    wget -O ffmpeg-release.tar.xz "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linuxarm64-gpl.tar.xz"
+# Check if FFmpeg already exists
+if command -v ffmpeg &> /dev/null; then
+    echo "FFmpeg already installed, skipping..."
+else
+    echo "Downloading FFmpeg binary..."
+    if [ "$ARCH" = "x86_64" ]; then
+        wget -O ffmpeg-release.tar.xz "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz"
+    elif [ "$ARCH" = "aarch64" ]; then
+        wget -O ffmpeg-release.tar.xz "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linuxarm64-gpl.tar.xz"
+    fi
+    
+    tar -xf ffmpeg-release.tar.xz
+    sudo cp ffmpeg-*/bin/* /usr/local/bin/
+    sudo chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
+    rm -rf ffmpeg-* ffmpeg-release.tar.xz
 fi
-
-# Extract and install FFmpeg
-tar -xf ffmpeg-release.tar.xz
-sudo cp ffmpeg-*/bin/* /usr/local/bin/
-sudo chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
-rm -rf ffmpeg-* ffmpeg-release.tar.xz
 
 # Verify FFmpeg installation
 ffmpeg -version
@@ -46,22 +49,26 @@ ffmpeg -version
 # Install Python dependencies for monitoring and VMAF
 pip3 install psutil boto3 matplotlib pandas numpy
 
-# Install VMAF
-echo "Installing VMAF..."
-sudo apt-get install -y build-essential meson ninja-build nasm
-git clone https://github.com/Netflix/vmaf.git
-cd vmaf/libvmaf
-meson setup build --buildtype release
-ninja -vC build
-sudo ninja -C build install
-sudo ldconfig
-cd ../..
+# Check if VMAF already exists
+if ldconfig -p | grep -q libvmaf; then
+    echo "VMAF already installed, skipping..."
+else
+    echo "Installing VMAF..."
+    sudo apt-get install -y build-essential meson ninja-build nasm
+    git clone https://github.com/Netflix/vmaf.git
+    cd vmaf/libvmaf
+    meson setup build --buildtype release
+    ninja -vC build
+    sudo ninja -C build install
+    sudo ldconfig
+    cd ../..
+fi
 
 # Create benchmark directories
-mkdir -p ~/ffmpeg-benchmark/{input,output,results,logs}
+mkdir -p ./ffmpeg-benchmark/{input,output,results,logs}
 
 # Download sample test files
-cd ~/ffmpeg-benchmark/input
+cd ./ffmpeg-benchmark/input
 
 # Download standard benchmark videos
 echo "Downloading test files..."
