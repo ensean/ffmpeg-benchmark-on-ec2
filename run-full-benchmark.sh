@@ -31,8 +31,7 @@ if [ ! "$(ls -A input/)" ]; then
     
     # Download standard benchmark videos
     wget -O big_buck_bunny_1080p.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-    wget -O sintel_4k.mp4 "https://download.blender.org/demo/movies/Sintel.2010.2160p.mkv" || echo "Sintel 4K not available"
-    
+        
     cd ..
 fi
 
