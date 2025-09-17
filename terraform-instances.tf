@@ -16,7 +16,7 @@ provider "aws" {
 variable "aws_region" {
   description = "AWS region for instances"
   type        = string
-  default     = "us-east-1"
+  default     = "ap-northeast-1"
 }
 
 variable "key_pair_name" {
@@ -32,7 +32,7 @@ resource "aws_security_group" "ffmpeg_benchmark" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["129.0.0.0/8"]
   }
   
   egress {
@@ -45,7 +45,7 @@ resource "aws_security_group" "ffmpeg_benchmark" {
 
 # x86 Instances
 resource "aws_instance" "c5_instance" {
-  ami           = "ami-0c02fb55956c7d316" # Ubuntu 20.04 LTS x86_64
+  ami           = "ami-0d52744d6551d851e" # Ubuntu 24.04 LTS x86_64
   instance_type = "c5.xlarge"
   key_name      = var.key_pair_name
   
@@ -63,7 +63,7 @@ resource "aws_instance" "c5_instance" {
 }
 
 resource "aws_instance" "c7i_instance" {
-  ami           = "ami-0c02fb55956c7d316" # Ubuntu 20.04 LTS x86_64
+  ami           = "ami-0d52744d6551d851e" # Ubuntu 24.04 LTS x86_64
   instance_type = "c7i.xlarge"
   key_name      = var.key_pair_name
   
@@ -81,7 +81,7 @@ resource "aws_instance" "c7i_instance" {
 }
 
 resource "aws_instance" "c7a_instance" {
-  ami           = "ami-0c02fb55956c7d316" # Ubuntu 20.04 LTS x86_64
+  ami           = "ami-0d52744d6551d851e" # Ubuntu 24.04 LTS x86_64
   instance_type = "c7a.xlarge"
   key_name      = var.key_pair_name
   
@@ -100,7 +100,7 @@ resource "aws_instance" "c7a_instance" {
 
 # Graviton Instance
 resource "aws_instance" "c8g_instance" {
-  ami           = "ami-0c2b8ca1dad447f8a" # Ubuntu 20.04 LTS ARM64
+  ami           = "ami-0f36dcfcc94112ea1" # Ubuntu 24.04 LTS ARM64
   instance_type = "c8g.xlarge"
   key_name      = var.key_pair_name
   
