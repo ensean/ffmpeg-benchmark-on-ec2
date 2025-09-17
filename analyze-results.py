@@ -41,7 +41,9 @@ class BenchmarkAnalyzer:
                         'max_cpu_usage': result['max_cpu_usage'],
                         'avg_memory_usage': result['avg_memory_usage'],
                         'output_file_size_mb': result['output_file_size'] / (1024**2),
-                        'fps': self.calculate_fps(result)
+                        'fps': self.calculate_fps(result),
+                        'real_time_factor': result.get('real_time_factor'),
+                        'vmaf_score': result.get('vmaf_score')
                     })
         
         return pd.DataFrame(rows)
@@ -76,6 +78,12 @@ class BenchmarkAnalyzer:
             report.append(f"### {arch}")
             report.append(f"- Average encoding time: {avg_duration:.2f}s")
             report.append(f"- Average CPU usage: {avg_cpu:.1f}%")
+            avg_rtf = arch_data['real_time_factor'].mean()
+            avg_vmaf = arch_data['vmaf_score'].mean()
+            if not pd.isna(avg_rtf):
+                report.append(f"- Average real-time factor: {avg_rtf:.2f}x")
+            if not pd.isna(avg_vmaf):
+                report.append(f"- Average VMAF score: {avg_vmaf:.1f}")
             report.append(f"- Tests completed: {len(arch_data)}")
             report.append("")
         

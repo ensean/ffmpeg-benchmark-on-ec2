@@ -26,6 +26,35 @@ class FFmpegBenchmark:
             "platform": os.uname().sysname
         }
     
+    def get_video_info(self, video_path):
+        """Get video duration and frame rate"""
+        cmd = ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", video_path]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            video_stream = next((s for s in data['streams'] if s['codec_type'] == 'video'), None)
+            if video_stream:
+                duration = float(data['format']['duration'])
+                fps = eval(video_stream['r_frame_rate'])
+                return duration, fps
+        return None, None
+    
+    def calculate_vmaf(self, reference_video, encoded_video):
+        """Calculate VMAF score between reference and encoded video"""
+        cmd = [
+            "ffmpeg", "-i", encoded_video, "-i", reference_video,
+            "-lavfi", "libvmaf=log_fmt=json:log_path=/tmp/vmaf.json",
+            "-f", "null", "-"
+        ]
+        
+        try:
+            subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+            with open('/tmp/vmaf.json', 'r') as f:
+                vmaf_data = json.load(f)
+                return vmaf_data['pooled_metrics']['vmaf']['mean']
+        except:
+            return None
+    
     def monitor_resources(self, interval=1):
         """Monitor CPU and memory usage during encoding"""
         self.cpu_usage = []
@@ -64,14 +93,24 @@ class FFmpegBenchmark:
             max_cpu = max(self.cpu_usage) if self.cpu_usage else 0
             avg_memory = sum(self.memory_usage) / len(self.memory_usage) if self.memory_usage else 0
             
-            # Get output file size
+            # Get input and output files
+            input_file = cmd[cmd.index("-i") + 1] if "-i" in cmd else None
             output_file = None
             for arg in cmd:
-                if arg.endswith(('.mp4', '.mkv', '.webm', '.avi')):
+                if arg.endswith(('.mp4', '.mkv', '.webm', '.avi')) and not arg == input_file:
                     output_file = arg
                     break
             
             file_size = os.path.getsize(output_file) if output_file and os.path.exists(output_file) else 0
+            
+            # Calculate real-time factor
+            video_duration, input_fps = self.get_video_info(input_file) if input_file else (None, None)
+            real_time_factor = video_duration / duration if video_duration and duration > 0 else None
+            
+            # Calculate VMAF if both files exist
+            vmaf_score = None
+            if input_file and output_file and os.path.exists(input_file) and os.path.exists(output_file):
+                vmaf_score = self.calculate_vmaf(input_file, output_file)
             
             test_result = {
                 "test_name": test_name,
@@ -82,13 +121,19 @@ class FFmpegBenchmark:
                 "max_cpu_usage": max_cpu,
                 "avg_memory_usage": avg_memory,
                 "output_file_size": file_size,
+                "video_duration": video_duration,
+                "input_fps": input_fps,
+                "real_time_factor": real_time_factor,
+                "vmaf_score": vmaf_score,
                 "timestamp": datetime.now().isoformat(),
                 "stderr": result.stderr,
                 "stdout": result.stdout
             }
             
             self.results.append(test_result)
-            print(f"Test completed in {duration:.2f}s (CPU: {avg_cpu:.1f}%)")
+            rtf_str = f", RTF: {real_time_factor:.2f}x" if real_time_factor else ""
+            vmaf_str = f", VMAF: {vmaf_score:.1f}" if vmaf_score else ""
+            print(f"Test completed in {duration:.2f}s (CPU: {avg_cpu:.1f}%{rtf_str}{vmaf_str})")
             return test_result
             
         except subprocess.TimeoutExpired:

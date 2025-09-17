@@ -43,8 +43,19 @@ rm -rf ffmpeg-* ffmpeg-release.tar.xz
 # Verify FFmpeg installation
 ffmpeg -version
 
-# Install Python dependencies for monitoring
-pip3 install psutil boto3 matplotlib pandas
+# Install Python dependencies for monitoring and VMAF
+pip3 install psutil boto3 matplotlib pandas numpy
+
+# Install VMAF
+echo "Installing VMAF..."
+sudo apt-get install -y build-essential meson ninja-build nasm
+git clone https://github.com/Netflix/vmaf.git
+cd vmaf/libvmaf
+meson setup build --buildtype release
+ninja -vC build
+sudo ninja -C build install
+sudo ldconfig
+cd ../..
 
 # Create benchmark directories
 mkdir -p ~/ffmpeg-benchmark/{input,output,results,logs}
@@ -57,9 +68,6 @@ echo "Downloading test files..."
 
 # Big Buck Bunny (1080p, ~158MB, 9:56 duration)
 wget -O big_buck_bunny_1080p.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-
-# Sintel (4K, ~347MB, 14:48 duration)
-wget -O sintel_4k.mp4 "https://download.blender.org/demo/movies/Sintel.2010.2160p.mkv" || echo "Sintel 4K not available"
 
 # Tears of Steel (1080p, ~365MB, 12:14 duration)
 wget -O tears_of_steel_1080p.mp4 "https://download.blender.org/demo/movies/ToS/ToS-4k-1920.mov" || echo "Tears of Steel not available"
