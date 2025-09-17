@@ -7,22 +7,14 @@ set -e
 
 echo "Starting FFmpeg benchmark suite..."
 
-# Create necessary directories
-mkdir -p ~/ffmpeg-benchmark/{input,output,results,logs}
-cd ~/ffmpeg-benchmark
+# change to benchmark dir
+cd ffmpeg-benchmark
 
 # Check if FFmpeg is installed
 if ! command -v ffmpeg &> /dev/null; then
     echo "FFmpeg not found! Please run setup-instances.sh first."
     exit 1
 fi
-
-# Log system information
-echo "=== System Information ===" | tee logs/system_info.log
-uname -a | tee -a logs/system_info.log
-lscpu | tee -a logs/system_info.log
-free -h | tee -a logs/system_info.log
-ffmpeg -version | head -n1 | tee -a logs/system_info.log
 
 # Check for input files
 if [ ! "$(ls -A input/)" ]; then
