@@ -8,7 +8,7 @@
 set -e
 
 # Parse duration parameter
-DURATION=${1:-60}
+DURATION=${1:-FULL}
 echo "Starting FFmpeg benchmark suite with duration: $DURATION"
 
 # change to benchmark dir

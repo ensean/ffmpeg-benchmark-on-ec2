@@ -161,6 +161,12 @@ class FFmpegBenchmark:
         """Run various encoding tests"""
         base_name = os.path.splitext(os.path.basename(input_file))[0]
         
+        # Check input video duration and limit if necessary
+        input_duration, _ = self.get_video_info(input_file)
+        if duration and input_duration and duration > input_duration:
+            print(f"Warning: Requested duration {duration}s exceeds video length {input_duration:.1f}s. Using full video.")
+            duration = None
+        
         # Add duration parameter to FFmpeg commands if specified
         duration_args = ["-t", str(duration)] if duration else []
         
