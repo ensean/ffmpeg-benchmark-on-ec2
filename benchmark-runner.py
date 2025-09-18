@@ -169,6 +169,15 @@ class FFmpegBenchmark:
             {
                 "name": f"h265_5mbps_{base_name}",
                 "cmd": ["ffmpeg", "-y", "-i", input_file, "-c:v", "libx265", "-b:v", "5M", "-c:a", "aac", f"output/h265_5m_{base_name}.mp4"]
+            },
+            # Transcode to different resolutions
+            {
+                "name": f"transcode_720p_{base_name}",
+                "cmd": ["ffmpeg", "-y", "-i", input_file, "-vf", "scale=1280:720", "-c:v", "libx265", "-crf", "23", "-c:a", "aac", f"output/720p_{base_name}.mp4"]
+            },
+            {
+                "name": f"transcode_540p_{base_name}",
+                "cmd": ["ffmpeg", "-y", "-i", input_file, "-vf", "scale=960:540", "-c:v", "libx265", "-crf", "23", "-c:a", "aac", f"output/540p_{base_name}.mp4"]
             }
         ]
         
