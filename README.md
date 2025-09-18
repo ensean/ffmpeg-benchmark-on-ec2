@@ -6,7 +6,7 @@ This repository contains a comprehensive benchmark suite for comparing FFmpeg pe
 
 ### 1. Launch Instances
 
-Use the Ubuntu 24.04 image for benchmark
+Use the Ubuntu 22.04 image for benchmark
 
 
 ### 2. Setup Instances
