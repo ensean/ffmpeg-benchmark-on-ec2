@@ -77,10 +77,8 @@ echo "Downloading test files..."
 wget -O big_buck_bunny_1080p.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
 
 # Tears of Steel (1080p, ~365MB, 12:14 duration)
-wget -O tears_of_steel_1080p.mp4 "https://download.blender.org/demo/movies/ToS/ToS-4k-1920.mov" || echo "Tears of Steel not available"
+# wget -O tears_of_steel_1080p.mp4 "https://download.blender.org/demo/movies/ToS/ToS-4k-1920.mov" || echo "Tears of Steel not available"
 
-# Elephants Dream (720p, ~213MB, 10:54 duration)
-wget -O elephants_dream_720p.mp4 "https://download.blender.org/demo/movies/ED_1280.avi" || echo "Elephants Dream not available"
 
 echo "Setup complete! Instance ready for FFmpeg benchmarking."
 echo "Architecture: $ARCH"
