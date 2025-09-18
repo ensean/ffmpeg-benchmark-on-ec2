@@ -128,12 +128,39 @@ class BenchmarkAnalyzer:
             
             report.append("")
         
+        # Add benchmark results table
+        report.append("## Benchmark Results Table")
+        report.append("")
+        
+        # Create summary table
+        summary_df = df.groupby(['architecture', 'test_name']).agg({
+            'avg_cpu_usage': 'mean',
+            'real_time_factor': 'mean',
+            'vmaf_score': 'mean'
+        }).round(2)
+        
+        # Convert to markdown table
+        report.append("| Architecture | Test | Avg CPU (%) | Real-Time Factor | VMAF Score |")
+        report.append("|--------------|------|-------------|------------------|------------|")
+        
+        for (arch, test), row in summary_df.iterrows():
+            cpu = f"{row['avg_cpu_usage']:.1f}" if not pd.isna(row['avg_cpu_usage']) else "N/A"
+            rtf = f"{row['real_time_factor']:.2f}x" if not pd.isna(row['real_time_factor']) else "N/A"
+            vmaf = f"{row['vmaf_score']:.1f}" if not pd.isna(row['vmaf_score']) else "N/A"
+            report.append(f"| {arch} | {test} | {cpu} | {rtf} | {vmaf} |")
+        
+        report.append("")
+        
         # Save report
         report_text = "\n".join(report)
         with open("benchmark_analysis_report.md", "w") as f:
             f.write(report_text)
         
-        print("Analysis report saved to: benchmark_analysis_report.md")
+        # Print table to console
+        print("\n=== Benchmark Results Summary ===")
+        print(summary_df.to_string())
+        
+        print("\nAnalysis report saved to: benchmark_analysis_report.md")
         return report_text
     
     def create_visualizations(self):
