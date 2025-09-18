@@ -4,17 +4,10 @@ This repository contains a comprehensive benchmark suite for comparing FFmpeg pe
 
 ## Quick Start
 
-### 1. Deploy Infrastructure
-```bash
-# Set your AWS credentials
-export AWS_ACCESS_KEY_ID=your_access_key
-export AWS_SECRET_ACCESS_KEY=your_secret_key
+### 1. Launch Instances
 
-# Deploy instances using Terraform
-terraform init
-terraform plan -var="key_pair_name=your-key-pair"
-terraform apply -var="key_pair_name=your-key-pair"
-```
+Use the Ubuntu 24.04 image for benchmark
+
 
 ### 2. Setup Instances
 ```bash
@@ -51,8 +44,6 @@ python3 analyze-results.py
 - **benchmark-runner.py**: Main benchmark execution script with performance monitoring
 - **analyze-results.py**: Results analysis and comparison report generator
 - **run-full-benchmark.sh**: Complete benchmark orchestration script
-- **terraform-instances.tf**: Infrastructure as Code for AWS EC2 instances
-- **user-data.sh**: Automated instance setup via EC2 user data
 
 ## Test Scenarios
 
