@@ -74,7 +74,7 @@ cd ./ffmpeg-benchmark/input
 echo "Downloading test files..."
 
 # Big Buck Bunny (1080p, ~158MB, 9:56 duration)
-wget -O big_buck_bunny_1080p.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+wget -O big_buck_bunny_1080p_fps30.mp4 "https://raw.githubusercontent.com/chintan9/Big-Buck-Bunny/refs/heads/master/BigBuckBunny1080p30s.mp4"
 
 # Tears of Steel (1080p, ~365MB, 12:14 duration)
 # wget -O tears_of_steel_1080p.mp4 "https://download.blender.org/demo/movies/ToS/ToS-4k-1920.mov" || echo "Tears of Steel not available"
