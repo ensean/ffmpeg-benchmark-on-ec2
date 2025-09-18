@@ -2,10 +2,14 @@
 
 # Full FFmpeg Benchmark Execution Script
 # Run this on both x86 and Graviton instances
+# Usage: ./run-full-benchmark.sh [duration]
+# duration: time in seconds (default: 60) or "FULL" for entire video
 
 set -e
 
-echo "Starting FFmpeg benchmark suite..."
+# Parse duration parameter
+DURATION=${1:-60}
+echo "Starting FFmpeg benchmark suite with duration: $DURATION"
 
 # change to benchmark dir
 cd ffmpeg-benchmark
@@ -29,7 +33,11 @@ fi
 
 # Run the benchmark
 echo "Starting benchmark execution..."
-python3 ../benchmark-runner.py --input-dir input --output-dir results
+if [ "$DURATION" = "FULL" ]; then
+    python3 ../benchmark-runner.py --input-dir input --output-dir results
+else
+    python3 ../benchmark-runner.py --input-dir input --output-dir results --duration $DURATION
+fi
 
 # Generate analysis if we have results from multiple architectures
 echo "Checking for analysis..."

@@ -103,14 +103,24 @@ class FFmpegBenchmark:
             
             file_size = os.path.getsize(output_file) if output_file and os.path.exists(output_file) else 0
             
-            # Calculate real-time factor
-            video_duration, input_fps = self.get_video_info(input_file) if input_file else (None, None)
-            real_time_factor = video_duration / duration if video_duration and duration > 0 else None
+            # Calculate real-time factor using output video duration
+            output_duration, input_fps = self.get_video_info(output_file) if output_file and os.path.exists(output_file) else (None, None)
+            real_time_factor = output_duration / duration if output_duration and duration > 0 else None
             
-            # Calculate VMAF if both files exist
+            # Calculate VMAF if both files exist (limit to same duration)
             vmaf_score = None
             if input_file and output_file and os.path.exists(input_file) and os.path.exists(output_file):
-                vmaf_score = self.calculate_vmaf(input_file, output_file)
+                # For VMAF, we need to compare the same duration segments
+                if output_duration:
+                    # Create temporary input segment matching output duration
+                    temp_input = "/tmp/temp_input_segment.mp4"
+                    segment_cmd = ["ffmpeg", "-y", "-i", input_file, "-t", str(output_duration), "-c", "copy", temp_input]
+                    try:
+                        subprocess.run(segment_cmd, capture_output=True, timeout=300)
+                        vmaf_score = self.calculate_vmaf(temp_input, output_file)
+                        os.remove(temp_input)
+                    except:
+                        pass
             
             test_result = {
                 "test_name": test_name,
@@ -121,7 +131,7 @@ class FFmpegBenchmark:
                 "max_cpu_usage": max_cpu,
                 "avg_memory_usage": avg_memory,
                 "output_file_size": file_size,
-                "video_duration": video_duration,
+                "video_duration": output_duration,
                 "input_fps": input_fps,
                 "real_time_factor": real_time_factor,
                 "vmaf_score": vmaf_score,
@@ -147,37 +157,44 @@ class FFmpegBenchmark:
             print(f"Test {test_name} failed: {e}")
             return None
     
-    def run_encoding_tests(self, input_file):
+    def run_encoding_tests(self, input_file, duration=None):
         """Run various encoding tests"""
         base_name = os.path.splitext(os.path.basename(input_file))[0]
+        
+        # Add duration parameter to FFmpeg commands if specified
+        duration_args = ["-t", str(duration)] if duration else []
         
         tests = [
             # H.264 encoding tests
             {
                 "name": f"h264_1mbps_{base_name}",
-                "cmd": ["ffmpeg", "-y", "-i", input_file, "-c:v", "libx264", "-b:v", "1M", "-c:a", "aac", f"output/h264_1m_{base_name}.mp4"]
+                "cmd": ["ffmpeg", "-y"] + duration_args + ["-i", input_file, "-c:v", "libx264", "-b:v", "1M", "-c:a", "aac", f"output/h264_1m_{base_name}.mp4"]
             },
             {
                 "name": f"h264_5mbps_{base_name}",
-                "cmd": ["ffmpeg", "-y", "-i", input_file, "-c:v", "libx264", "-b:v", "5M", "-c:a", "aac", f"output/h264_5m_{base_name}.mp4"]
+                "cmd": ["ffmpeg", "-y"] + duration_args + ["-i", input_file, "-c:v", "libx264", "-b:v", "5M", "-c:a", "aac", f"output/h264_5m_{base_name}.mp4"]
             },
             # H.265 encoding tests
             {
                 "name": f"h265_1mbps_{base_name}",
-                "cmd": ["ffmpeg", "-y", "-i", input_file, "-c:v", "libx265", "-b:v", "1M", "-c:a", "aac", f"output/h265_1m_{base_name}.mp4"]
+                "cmd": ["ffmpeg", "-y"] + duration_args + ["-i", input_file, "-c:v", "libx265", "-b:v", "1M", "-c:a", "aac", f"output/h265_1m_{base_name}.mp4"]
             },
             {
                 "name": f"h265_5mbps_{base_name}",
-                "cmd": ["ffmpeg", "-y", "-i", input_file, "-c:v", "libx265", "-b:v", "5M", "-c:a", "aac", f"output/h265_5m_{base_name}.mp4"]
+                "cmd": ["ffmpeg", "-y"] + duration_args + ["-i", input_file, "-c:v", "libx265", "-b:v", "5M", "-c:a", "aac", f"output/h265_5m_{base_name}.mp4"]
             },
             # Transcode to different resolutions
             {
                 "name": f"transcode_720p_{base_name}",
-                "cmd": ["ffmpeg", "-y", "-i", input_file, "-vf", "scale=1280:720", "-c:v", "libx265", "-crf", "23", "-c:a", "aac", f"output/720p_{base_name}.mp4"]
+                "cmd": ["ffmpeg", "-y"] + duration_args + ["-i", input_file, "-vf", "scale=1280:720", "-c:v", "libx265", "-crf", "23", "-c:a", "aac", f"output/720p_{base_name}.mp4"]
             },
             {
                 "name": f"transcode_540p_{base_name}",
-                "cmd": ["ffmpeg", "-y", "-i", input_file, "-vf", "scale=960:540", "-c:v", "libx265", "-crf", "23", "-c:a", "aac", f"output/540p_{base_name}.mp4"]
+                "cmd": ["ffmpeg", "-y"] + duration_args + ["-i", input_file, "-vf", "scale=960:540", "-c:v", "libx265", "-crf", "23", "-c:a", "aac", f"output/540p_{base_name}.mp4"]
+            },
+            {
+                "name": f"transcode_360p_{base_name}",
+                "cmd": ["ffmpeg", "-y"] + duration_args + ["-i", input_file, "-vf", "scale=640:360", "-c:v", "libx265", "-crf", "23", "-c:a", "aac", f"output/360p_{base_name}.mp4"]
             }
         ]
         
@@ -210,6 +227,7 @@ def main():
     parser = argparse.ArgumentParser(description='FFmpeg Benchmark Runner')
     parser.add_argument('--input-dir', default='input', help='Input directory with test files')
     parser.add_argument('--output-dir', default='results', help='Output directory for results')
+    parser.add_argument('--duration', type=int, help='Duration in seconds to process (default: full video)')
     args = parser.parse_args()
     
     benchmark = FFmpegBenchmark(args.output_dir)
@@ -229,7 +247,7 @@ def main():
     # Run tests for each input file
     for input_file in input_files:
         print(f"\nTesting with: {input_file}")
-        benchmark.run_encoding_tests(input_file)
+        benchmark.run_encoding_tests(input_file, args.duration)
     
     # Save results
     benchmark.save_results()
