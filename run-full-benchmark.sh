@@ -26,7 +26,7 @@ if [ ! "$(ls -A input/)" ]; then
     cd input
     
     # Download standard benchmark videos
-    wget -O big_buck_bunny_1080p.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+    wget -O big_buck_bunny_1080p.mp4 "https://raw.githubusercontent.com/chintan9/Big-Buck-Bunny/refs/heads/master/BigBuckBunny1080p30s.mp4"
         
     cd ..
 fi
