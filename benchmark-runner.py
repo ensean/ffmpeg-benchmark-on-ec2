@@ -16,14 +16,35 @@ class FFmpegBenchmark:
         self.results = []
         self.monitoring = True
         
+    def get_instance_type(self):
+        """Get EC2 instance type from metadata service (IMDSv2)"""
+        try:
+            import urllib.request
+            # Get token for IMDSv2
+            token_req = urllib.request.Request('http://169.254.169.254/latest/api/token')
+            token_req.add_header('X-aws-ec2-metadata-token-ttl-seconds', '21600')
+            token_req.get_method = lambda: 'PUT'
+            token_response = urllib.request.urlopen(token_req, timeout=2)
+            token = token_response.read().decode('utf-8')
+            
+            # Get instance type using token
+            instance_req = urllib.request.Request('http://169.254.169.254/latest/meta-data/instance-type')
+            instance_req.add_header('X-aws-ec2-metadata-token', token)
+            instance_response = urllib.request.urlopen(instance_req, timeout=2)
+            return instance_response.read().decode('utf-8')
+        except:
+            return None
+    
     def get_system_info(self):
         """Collect system information"""
+        instance_type = self.get_instance_type()
         return {
             "cpu_count": psutil.cpu_count(),
             "cpu_freq": psutil.cpu_freq()._asdict() if psutil.cpu_freq() else None,
             "memory_total": psutil.virtual_memory().total,
             "architecture": os.uname().machine,
-            "platform": os.uname().sysname
+            "platform": os.uname().sysname,
+            "instance_type": instance_type
         }
     
     def get_video_info(self, video_path):

@@ -18,10 +18,11 @@ class BenchmarkAnalyzer:
                 filepath = os.path.join(results_dir, filename)
                 with open(filepath, 'r') as f:
                     data = json.load(f)
-                    arch = data['system_info']['architecture']
-                    self.results[arch] = data
+                    # Use instance_type if available, otherwise fall back to architecture
+                    instance_type = data['system_info'].get('instance_type', data['system_info']['architecture'])
+                    self.results[instance_type] = data
         
-        print(f"Loaded results for architectures: {list(self.results.keys())}")
+        print(f"Loaded results for instance types: {list(self.results.keys())}")
     
     def create_comparison_dataframe(self):
         """Create DataFrame for comparison analysis"""
@@ -31,8 +32,10 @@ class BenchmarkAnalyzer:
             system_info = data['system_info']
             for result in data['benchmark_results']:
                 if result.get('success', False):
+                    # Use instance_type if available, otherwise use architecture
+                    instance_type = data['system_info'].get('instance_type', arch)
                     rows.append({
-                        'architecture': arch,
+                        'instance_type': instance_type,
                         'cpu_count': system_info['cpu_count'],
                         'memory_total_gb': system_info['memory_total'] / (1024**3),
                         'test_name': result['test_name'],
@@ -68,14 +71,14 @@ class BenchmarkAnalyzer:
         report.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         report.append("")
         
-        # Architecture summary
-        report.append("## Architecture Summary")
-        for arch in df['architecture'].unique():
-            arch_data = df[df['architecture'] == arch]
+        # Instance Type summary
+        report.append("## Instance Type Summary")
+        for instance_type in df['instance_type'].unique():
+            arch_data = df[df['instance_type'] == instance_type]
             avg_duration = arch_data['duration'].mean()
             avg_cpu = arch_data['avg_cpu_usage'].mean()
             
-            report.append(f"### {arch}")
+            report.append(f"### {instance_type}")
             report.append(f"- Average encoding time: {avg_duration:.2f}s")
             report.append(f"- Average CPU usage: {avg_cpu:.1f}%")
             avg_rtf = arch_data['real_time_factor'].mean()
@@ -97,27 +100,27 @@ class BenchmarkAnalyzer:
             if not test_data.empty:
                 report.append(f"### {test_type.upper()}")
                 
-                for arch in test_data['architecture'].unique():
-                    arch_test_data = test_data[test_data['architecture'] == arch]
+                for instance_type in test_data['instance_type'].unique():
+                    arch_test_data = test_data[test_data['instance_type'] == instance_type]
                     avg_duration = arch_test_data['duration'].mean()
                     avg_fps = arch_test_data['fps'].mean()
                     
-                    report.append(f"- {arch}: {avg_duration:.2f}s avg, {avg_fps:.2f} fps")
+                    report.append(f"- {instance_type}: {avg_duration:.2f}s avg, {avg_fps:.2f} fps")
                 
                 report.append("")
         
         # Performance ratios
-        if len(df['architecture'].unique()) >= 2:
-            archs = list(df['architecture'].unique())
-            arch1, arch2 = archs[0], archs[1]
+        if len(df['instance_type'].unique()) >= 2:
+            instance_types = list(df['instance_type'].unique())
+            arch1, arch2 = instance_types[0], instance_types[1]
             
             report.append("## Performance Ratios")
             
             for test_type in test_types:
                 test_data = df[df['test_name'].str.contains(test_type)]
                 if not test_data.empty:
-                    arch1_avg = test_data[test_data['architecture'] == arch1]['duration'].mean()
-                    arch2_avg = test_data[test_data['architecture'] == arch2]['duration'].mean()
+                    arch1_avg = test_data[test_data['instance_type'] == arch1]['duration'].mean()
+                    arch2_avg = test_data[test_data['instance_type'] == arch2]['duration'].mean()
                     
                     if arch1_avg > 0 and arch2_avg > 0:
                         ratio = arch1_avg / arch2_avg
@@ -133,15 +136,15 @@ class BenchmarkAnalyzer:
         report.append("")
         
         # Create summary table
-        summary_df = df.groupby(['architecture', 'test_name']).agg({
+        summary_df = df.groupby(['instance_type', 'test_name']).agg({
             'avg_cpu_usage': 'mean',
             'real_time_factor': 'mean',
             'vmaf_score': 'mean'
         }).round(2)
         
         # Convert to markdown table
-        report.append("| Architecture | Test | Avg CPU (%) | Real-Time Factor | VMAF Score |")
-        report.append("|--------------|------|-------------|------------------|------------|")
+        report.append("| Instance Type | Test | Avg CPU (%) | Real-Time Factor | VMAF Score |")
+        report.append("|---------------|------|-------------|------------------|------------|")
         
         for (arch, test), row in summary_df.iterrows():
             cpu = f"{row['avg_cpu_usage']:.1f}" if not pd.isna(row['avg_cpu_usage']) else "N/A"
@@ -176,29 +179,29 @@ class BenchmarkAnalyzer:
         
         # Duration comparison
         plt.subplot(2, 2, 1)
-        df.groupby(['architecture', 'test_name'])['duration'].mean().unstack().plot(kind='bar')
-        plt.title('Average Encoding Duration by Architecture')
+        df.groupby(['instance_type', 'test_name'])['duration'].mean().unstack().plot(kind='bar')
+        plt.title('Average Encoding Duration by Instance Type')
         plt.ylabel('Duration (seconds)')
         plt.xticks(rotation=45)
         
         # CPU usage comparison
         plt.subplot(2, 2, 2)
-        df.groupby(['architecture', 'test_name'])['avg_cpu_usage'].mean().unstack().plot(kind='bar')
-        plt.title('Average CPU Usage by Architecture')
+        df.groupby(['instance_type', 'test_name'])['avg_cpu_usage'].mean().unstack().plot(kind='bar')
+        plt.title('Average CPU Usage by Instance Type')
         plt.ylabel('CPU Usage (%)')
         plt.xticks(rotation=45)
         
         # FPS comparison
         plt.subplot(2, 2, 3)
-        df.groupby(['architecture', 'test_name'])['fps'].mean().unstack().plot(kind='bar')
-        plt.title('Processing Speed (FPS) by Architecture')
+        df.groupby(['instance_type', 'test_name'])['fps'].mean().unstack().plot(kind='bar')
+        plt.title('Processing Speed (FPS) by Instance Type')
         plt.ylabel('Frames per Second')
         plt.xticks(rotation=45)
         
         # File size comparison
         plt.subplot(2, 2, 4)
-        df.groupby(['architecture', 'test_name'])['output_file_size_mb'].mean().unstack().plot(kind='bar')
-        plt.title('Output File Size by Architecture')
+        df.groupby(['instance_type', 'test_name'])['output_file_size_mb'].mean().unstack().plot(kind='bar')
+        plt.title('Output File Size by Instance Type')
         plt.ylabel('File Size (MB)')
         plt.xticks(rotation=45)
         
